@@ -1,18 +1,20 @@
 #include <Pushbutton.h>
 #include <ZumoMotors.h>
-
  
 //Pin config
 #define LED 13
 //Sharp340
 #define RD0_Pin A4 
 #define RD1_Pin 5
+//rotation direction
+#define RIGHT 0
+#define LEFT 1
   
 // these might need to be tuned for different motor types
 #define FULL_SPEED        400
 #define REVERSE_SPEED     200 // 0 is stopped, 400 is full speed
-#define TURN_SPEED        200
-#define FORWARD_SPEED     200
+#define TURN_SPEED        250
+#define FORWARD_SPEED     250
 #define REVERSE_DURATION  200 // ms
 #define TURN_DURATION     300 // ms
 
@@ -22,7 +24,7 @@ byte RDM; //Robot detection Matrix
 byte First_RDM=0xFF; //Robot detection Matrix, one loop before
 int buttonState = 0; //Start buttun
 int goPressed = 0;    //button pressed once
-byte First_loop = 0;
+byte rotation = LEFT; //defult rotation to left
 
 ZumoMotors motors;
 Pushbutton button(ZUMO_BUTTON); // pushbutton on pin 12
@@ -74,22 +76,29 @@ void setup()
 
 void loop()
 {
+SharpRead();
+// SharpPrint(); //debug output of Sharp reading
+  
 buttonState = button.isPressed();
-
 if ((buttonState == HIGH) or (goPressed == HIGH)) //Start then button presed
 {     
   if ((goPressed != HIGH)){
     digitalWrite(LED, HIGH);
+    if (RDM != 0) 
+      rotation = RIGHT;
     Serial.println(millis());
     StartTimer5Sec(4700);//Delay into msec after start
     Serial.println(millis());
     goPressed = 1; //set to High after first press    
     digitalWrite(LED, LOW);
-    motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+      switch(rotation){
+       case LEFT: motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+         break;
+       case RIGHT: motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
+         break;  
+      };
   };
 
-SharpRead();
-SharpPrint();
 
 if (First_RDM != RDM)//If no changes into RDM, do nothing
   {
@@ -111,12 +120,17 @@ if (First_RDM != RDM)//If no changes into RDM, do nothing
       motors.setSpeeds(FULL_SPEED, FORWARD_SPEED);
       Serial.println("Right");
     break;
-//    case B00000000:
-//    delay(50);
-//    Serial.println("delay");
-//    break;
+ //  case B00000000:
+ //     delay(50);
+ //     Serial.println("delay");
+ //   break;
     default:
-      motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+      switch(rotation){
+       case LEFT: motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+         break;
+       case RIGHT: motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
+         break;  
+      };
       Serial.println("Find");
     };
   };
